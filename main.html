@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="StreamDex - RTMP Streaming Application">
+    <title>StreamDex - RTMP Streaming Application</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        header, footer {
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 1.5rem;
+        }
+        header h1 {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+        h2, h3 {
+            color: #333;
+            margin-top: 1.5em;
+        }
+        main {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        pre {
+            background-color: #f0f0f0;
+            padding: 1rem;
+            overflow: auto;
+            margin: 0.5em 0;
+        }
+        code {
+            color: #d6336c;
+        }
+        ul {
+            margin: 0.5rem 0;
+        }
+        a {
+            color: #d6336c;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>StreamDex</h1>
+        <p>A powerful RTMP streaming application for creating and managing live music videos.</p>
+    </header>
+
+    <main>
+        <section>
+            <h2>Overview</h2>
+            <p><strong>StreamDex</strong> is a robust RTMP streaming application designed to help users create, manage, and stream live music videos. With a user-friendly interface and a range of features, StreamDex aims to elevate your live streaming experience.</p>
+        </section>
+
+        <section>
+            <h2>Features</h2>
+            <ul>
+                <li><strong>Create Music Videos</strong>: Create and manage live music video streams.</li>
+                <li><strong>Audio Management</strong>: Add, remove, and manage audio tracks.</li>
+                <li><strong>Stream Links</strong>: Generate and manage RTMP links.</li>
+                <li><strong>Playlist Management</strong>: Organize streams with custom playlists.</li>
+                <li><strong>Real-Time Streaming</strong>: Start and stop streams with live previews.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Prerequisites</h2>
+            <p>To install and run StreamDex, ensure the following:</p>
+            <ul>
+                <li>A Debian-based Linux server (Ubuntu recommended).</li>
+                <li>PHP, NGINX, and FFmpeg installed on your system.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Installation</h2>
+            <h3>Manual Installation</h3>
+            <p>Follow these steps to manually set up StreamDex:</p>
+
+            <p><strong>1. Update and upgrade your system:</strong></p>
+            <pre><code>sudo apt update
+sudo apt upgrade -y</code></pre>
+
+            <p><strong>2. Install NGINX:</strong></p>
+            <pre><code>sudo apt install nginx -y</code></pre>
+
+            <p><strong>3. Add PHP repository:</strong></p>
+            <pre><code>sudo apt install software-properties-common
+sudo add-apt-repository ppa:ondrej/php
+sudo apt update</code></pre>
+
+            <p><strong>4. Install dependencies:</strong></p>
+            <pre><code>sudo apt install curl ffmpeg git php8.1-fpm php8.1-sqlite3 php8.1-gd php8.1-intl php8.1-mbstring -y</code></pre>
+
+            <p><strong>5. Start and enable PHP:</strong></p>
+            <pre><code>sudo systemctl start php8.1-fpm
+sudo systemctl enable php8.1-fpm</code></pre>
+
+            <p><strong>6. Configure NGINX for StreamDex:</strong></p>
+            <pre><code>sudo nano /etc/nginx/sites-available/default</code></pre>
+
+            <p>Replace the contents with:</p>
+            <pre><code>server {
+    listen 80;
+    server_name localhost;
+    root /var/www/html;
+    index index.php index.html index.htm;
+    client_max_body_size 100M;
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+    location ~ /\.ht {
+        deny all;
+    }
+}</code></pre>
+
+            <p><strong>7. Restart NGINX:</strong></p>
+            <pre><code>sudo systemctl restart nginx</code></pre>
+
+            <p><strong>8. Clone the StreamDex repository:</strong></p>
+            <pre><code>sudo git clone https://github.com/Subhendu1987/StreamDex.git .</code></pre>
+
+            <p><strong>9. Set write permissions:</strong></p>
+            <pre><code>sudo chmod -R 777 /var/www/html/writable</code></pre>
+
+            <p><strong>10. Add RTMP support to NGINX:</strong></p>
+            <pre><code>sudo add-apt-repository universe
+sudo apt install libnginx-mod-rtmp</code></pre>
+
+            <p><strong>11. Update NGINX configuration for RTMP streaming:</strong></p>
+            <pre><code>sudo nano /etc/nginx/nginx.conf</code></pre>
+
+            <p>Replace with the following configuration:</p>
+            <pre><code>user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+error_log /var/log/nginx/error.log;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+    worker_connections 768;
+}
+
+http {
+    sendfile on;
+    tcp_nopush on;
+    types_hash_max_size 2048;
+
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+
+    access_log /var/log/nginx/access.log;
+
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
+}
+
+rtmp {
+    server {
+        listen 1935;
+        chunk_size 4096;
+
+        application live {
+            live on;
+            record off;
+            hls on;
+            hls_path /var/www/html/writable/uploads/hls/;
+            hls_fragment 3;
+            hls_playlist_length 10;
+
+            allow publish all;
+            allow play all;
+        }
+
+        application push {
+            live on;
+            record off;
+            push rtmp://localhost/live;
+        }
+    }
+}</code></pre>
+
+            <p><strong>12. Restart NGINX:</strong></p>
+            <pre><code>sudo systemctl restart nginx</code></pre>
+        </section>
+
+        <section>
+            <h3>Alternative Installation via Docker</h3>
+            <p>If you prefer Docker, you can pull and run the <strong>StreamDex</strong> image from Docker Hub:</p>
+            <pre><code>docker pull dexcorp/streamdex:v1.0.1</code></pre>
+
+            <p>Run the Docker container:</p>
+            <pre><code>docker run -d -p 80:80 -p 1935:1935 --name streamdex-container dexcorp/streamdex:v1.0.1</code></pre>
+        </section>
+
+        <section>
+            <h2>License</h2>
+            <p>StreamDex is licensed under the <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html" target="_blank">GNU General Public License v2.0</a>.</p>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 StreamDex. All rights reserved.</p>
+    </footer>
+</body>
+</html>
